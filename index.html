@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentence Transformation - @truonggcong</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap');
+        body { font-family: 'Space Grotesk', sans-serif; background-color: #cdb4db; color: #1d1d1b; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        #info-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+        .modal-content { background: #fff; padding: 40px; border: 4px solid #1d1d1b; box-shadow: 10px 10px 0px #fb6f92; border-radius: 15px; text-align: center; max-width: 400px; width: 90%; }
+        #timer-box { position: fixed; top: 20px; left: 20px; background: #ffc8dd; border: 3px solid #1d1d1b; padding: 10px 20px; font-weight: bold; font-size: 18px; box-shadow: 4px 4px 0px #1d1d1b; z-index: 100; border-radius: 8px; }
+        #music-player { position: fixed; bottom: 20px; right: 20px; border: 3px solid #1d1d1b; box-shadow: 4px 4px 0px #1d1d1b; z-index: 100; display: none; background: #fff; height: 80px; }
+        .container { background-color: #fff; max-width: 850px; width: 90%; border: 4px solid #1d1d1b; box-shadow: 12px 12px 0px #ffafcc; border-radius: 12px; padding: 30px; display: none; margin-top: 50px; }
+        .question-box { background-color: #bde0fe; padding: 20px; border: 3px solid #1d1d1b; border-radius: 8px; font-size: 18px; font-weight: bold; margin-bottom: 20px; }
+        .input-group { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; background: #f8f9fa; padding: 15px; border: 3px solid #1d1d1b; border-radius: 8px; margin-bottom: 15px; }
+        input[type="text"] { flex-grow: 1; padding: 12px; border: 2px dashed #1d1d1b; border-radius: 6px; font-size: 18px; font-family: inherit; }
+        .feedback { display: none; padding: 15px; border: 3px solid #1d1d1b; border-radius: 8px; margin-top: 15px; line-height: 1.5; font-size: 18px; }
+        .hint-box { display: none; background: #fff0f3; color: #fb6f92; padding: 15px; border-left: 5px solid #fb6f92; margin-bottom: 15px; font-weight: 600; }
+        button.action-btn { width: 100%; padding: 15px; margin-bottom: 10px; font-weight: bold; font-size: 18px; border: 3px solid #1d1d1b; border-radius: 8px; cursor: pointer; box-shadow: 4px 4px 0px #1d1d1b; font-family: inherit; }
+    </style>
+</head>
+<body>
+    <div id="timer-box">Time: 00:00</div>
+    <div id="music-player"><iframe id="yt-iframe" width="250" height="80" src="" frameborder="0" allow="autoplay"></iframe></div>
+    <div id="info-modal"><div class="modal-content"><h2>REWRITE QUIZ 👋</h2><input type="text" id="student-name" placeholder="Họ tên..."><input type="text" id="student-class" placeholder="Lớp..."><button onclick="startQuiz()" style="width:100%; padding:15px; background:#fb6f92; color:white; border:3px solid #1d1d1b; border-radius:8px; font-weight:bold; cursor:pointer;">BẮT ĐẦU</button></div></div>
+    <div class="container" id="main-container">
+        <div class="header" style="text-align:center;"><h1>SENTENCE TRANSFORMATION</h1><p id="display-info" style="color:#8338ec; font-weight:bold;"></p></div>
+        <div id="quiz-area">
+            <div id="progress-text" style="color:#8338ec; font-weight:bold; margin-bottom:10px;">Câu 1 / 30</div>
+            <div class="question-box" id="question-text"></div>
+            <div class="input-group"><span id="prefix-text" style="color:#fb6f92; font-weight:bold; font-size:18px;"></span><input type="text" id="user-answer" placeholder="Viết tiếp phần còn lại..." autocomplete="off"></div>
+            <button onclick="check()" id="check-btn" class="action-btn" style="background:#8338ec; color:white;">KIỂM TRA</button>
+            <button onclick="showHint()" id="hint-btn" class="action-btn" style="background:#ffc8dd; color:#1d1d1b;">💡 GỢI Ý CẤU TRÚC</button>
+            <div id="hint-box" class="hint-box"></div>
+            <div id="feedback-box" class="feedback"></div>
+            <button id="next-btn" style="display:none; background:#fb6f92; color:white;" class="action-btn" onclick="loadNext()">CÂU TIẾP THEO 🚀</button>
+        </div>
+        <div id="finish-area" style="display:none; text-align:center;"><h2>🎉 XUẤT SẮC! 🎉</h2><p id="total-time-display"></p></div>
+    </div>
+<script>
+    const scriptURL = 'DÁN_LINK_WEB_APP_SHEET_CỦA_BÀ_VÀO_ĐÂY';
+    let studentData = { name: "", className: "", startTime: "", endTime: "" };
+    let startTimeObj, timerInterval, currentIdx = 0;
+
+    const questions = [
+        { q: "1. People display contemporary artworks in the main gallery every month.", prefix: "Contemporary artworks", ans: ["are displayed in the main gallery every month"], full: "Contemporary artworks are displayed in the main gallery every month.", ex: "Câu bị động Hiện tại đơn: S + am/is/are + V3/ed." },
+        { q: "2. The museum hired a professional to restore the ancient vase last week.", prefix: "The museum had", ans: ["a professional restore the ancient vase last week", "the ancient vase restored by a professional last week"], full: "The museum had a professional restore the ancient vase last week.", ex: "Cấu trúc nhờ vả (Causative): have somebody DO something / have something DONE." },
+        { q: "3. Students must submit their art projects to the teacher before Friday.", prefix: "Art projects", ans: ["must be submitted to the teacher before friday"], full: "Art projects must be submitted to the teacher before Friday.", ex: "Bị động với Modal Verb (must): must + be + V3/ed." },
+        { q: "4. A famous designer will make a bespoke suit for the CEO in Paris.", prefix: "The CEO will have", ans: ["a bespoke suit made by a famous designer in paris"], full: "The CEO will have a bespoke suit made by a famous designer in Paris.", ex: "Cấu trúc nhờ vả: will have something DONE." },
+        { q: "5. The committee is interviewing the top candidates right now.", prefix: "The top candidates", ans: ["are being interviewed in the conference room right now"], full: "The top candidates are being interviewed right now.", ex: "Bị động Hiện tại tiếp diễn: am/is/are + being + V3/ed." },
+        { q: "6. The gallery owner is arranging for someone to install new lighting.", prefix: "The gallery owner is having", ans: ["new lighting installed in the exhibition hall"], full: "The gallery owner is having new lighting installed.", ex: "Cấu trúc nhờ vả: is having something DONE." },
+        { q: "7. They have organized a special workshop at the university.", prefix: "A special workshop", ans: ["has been organized for young entrepreneurs at the university"], full: "A special workshop has been organized at the university.", ex: "Bị động Hiện tại hoàn thành: have/has + been + V3/ed." },
+        { q: "8. You should ask a mechanic to check your car.", prefix: "You should have", ans: ["a mechanic check your car before the business trip tomorrow", "your car checked by a mechanic before the business trip tomorrow"], full: "You should have a mechanic check your car.", ex: "Cấu trúc nhờ vả: have sb do sth / have sth done." },
+        { q: "9. The director was filming the climax scene at 9 PM yesterday.", prefix: "The climax scene", ans: ["was being filmed in the studio at 9 pm yesterday"], full: "The climax scene was being filmed at 9 PM yesterday.", ex: "Bị động Quá khứ tiếp diễn: was/were + being + V3/ed." },
+        { q: "10. The author has asked an artist to illustrate her new book recently.", prefix: "The successful author has had", ans: ["an artist illustrate her new book recently", "her new book illustrated by an artist recently"], full: "The successful author has had an artist illustrate her book.", ex: "Cấu trúc nhờ vả HTHT: has had sb do sth." },
+        { q: "11. They had sold all the tickets before we arrived.", prefix: "By the time we arrived, all the tickets", ans: ["had been sold for the concert at the stadium"], full: "By the time we arrived, all the tickets had been sold.", ex: "Bị động Quá khứ hoàn thành: had + been + V3/ed." },
+        { q: "12. He was paying a firm to manage his investments.", prefix: "While he was working abroad, he was having", ans: ["a financial firm manage his investments back home", "his investments managed by a financial firm back home"], full: "While he was working abroad, he was having his investments managed.", ex: "Nhờ vả Quá khứ tiếp diễn: was having sth done." },
+        { q: "13. Visitors can view the breathtaking sculptures all year round.", prefix: "The breathtaking sculptures", ans: ["can be viewed in the courtyard all year round"], full: "The breathtaking sculptures can be viewed all year round.", ex: "Bị động với Modal Verb: can + be + V3/ed." },
+        { q: "14. The student wants someone to translate his thesis.", prefix: "The ambitious student wants to have", ans: ["his thesis translated into english next month"], full: "The ambitious student wants to have his thesis translated.", ex: "Wants to have something DONE." },
+        { q: "15. The council will build a new theater next year.", prefix: "A new theater", ans: ["will be built in the downtown area next year"], full: "A new theater will be built next year.", ex: "Bị động Tương lai đơn: will + be + V3/ed." },
+        { q: "16. Staff have to transport the painting before midnight.", prefix: "The priceless", ans: ["painting has to be transported to the new gallery before midnight"], full: "The priceless painting has to be transported before midnight.", ex: "Bị động với have to: has to + be + V3/ed." },
+        { q: "17. We missed the train because we arrived late.", prefix: "If", ans: ["we hadn't arrived at the station late we wouldn't have missed the train"], full: "If we hadn't arrived late, we wouldn't have missed the train.", ex: "Điều kiện Loại 3 (trái quá khứ): If S + had + V3, S + would have + V3." },
+        { q: "18. The street vendor didn't have a permit, so he was fined.", prefix: "If the street vendor", ans: ["had had a permit he wouldn't have been fined"], full: "If the street vendor had had a permit, he wouldn't have been fined.", ex: "Điều kiện Loại 3: Had had (quá khứ hoàn thành)." },
+        { q: "19. The city suffered from overpopulation because the government didn't limit immigration.", prefix: "If the government", ans: ["had limited immigration years ago the city wouldn't have suffered from overpopulation"], full: "If the government had limited immigration, the city wouldn't have suffered.", ex: "Điều kiện Loại 3." },
+        { q: "20. The ballet was called off due to heavy rain.", prefix: "If it", ans: ["hadn't rained heavily the outdoor ballet performance wouldn't have been called off"], full: "If it hadn't rained heavily, the ballet wouldn't have been called off.", ex: "Chuyển từ 'due to rain' sang mệnh đề If Loại 3." },
+        { q: "21. The prime minister commenced the new academic year ceremony.", prefix: "It", ans: ["was the prime minister who commenced the new academic year ceremony"], full: "It was the prime minister who commenced the ceremony.", ex: "Câu chẻ nhấn mạnh chủ ngữ: It was + S + who + V." },
+        { q: "22. We visited the historic mosque adjacent to the city hall.", prefix: "It", ans: ["was the historic mosque that we visited adjacent to the city hall"], full: "It was the historic mosque that we visited.", ex: "Câu chẻ nhấn mạnh tân ngữ: It was + O + that + S + V." },
+        { q: "23. The young choreographer inspired the dancers.", prefix: "It", ans: ["was the young choreographer who inspired the dancers with her extraordinary creativity"], full: "It was the young choreographer who inspired the dancers.", ex: "Câu chẻ nhấn mạnh chủ ngữ chỉ người." },
+        { q: "24. The commuters often hail a taxi at this busy boulevard.", prefix: "It", ans: ["is at this busy boulevard that the commuters often hail a taxi"], full: "It is at this busy boulevard that the commuters often hail a taxi.", ex: "Câu chẻ nhấn mạnh trạng ngữ: It is + Prep + N + that + S + V." },
+        { q: "25. The conductor who is leading the orchestra tonight is famous.", prefix: "The conductor", ans: ["leading the orchestra tonight is very world-famous"], full: "The conductor leading the orchestra tonight is famous.", ex: "Rút gọn MĐQH chủ động -> V-ing." },
+        { q: "26. The antique furniture which was knitted by local artisans is expensive.", prefix: "The antique furniture", ans: ["knitted by local artisans is very expensive"], full: "The antique furniture knitted by local artisans is expensive.", ex: "Rút gọn MĐQH bị động -> V3/ed." },
+        { q: "27. Mark was the first resident who reached the destination.", prefix: "Mark was", ans: ["the first resident to reach the destination ahead of schedule"], full: "Mark was the first resident to reach the destination.", ex: "Rút gọn MĐQH sau 'the first' -> to-V." },
+        { q: "28. The children's entertainer wearing a colorful costume is funny.", prefix: "The children's entertainer wh", ans: ["o is wearing a colorful costume is very funny"], full: "The children's entertainer who is wearing a colorful costume is funny.", ex: "Phục hồi MĐQH: thêm 'who' và 'be'." },
+        { q: "29. Most paintings exhibited in the national gallery are extraordinary.", prefix: "Most paintings wh", ans: ["ich are exhibited in the national gallery are extraordinary"], full: "Most paintings which are exhibited are extraordinary.", ex: "Phục hồi MĐQH bị động: which + are + V3." },
+        { q: "30. There are still dozen of refreshments to purchase. (Use infinitive clause)", prefix: "There are still", ans: ["dozen of refreshments to be purchased for the party"], full: "There are still dozen of refreshments to be purchased.", ex: "Dùng to-infinitive bị động: to be + V3." }
+    ];
+
+    function startQuiz() {
+        const n = document.getElementById('student-name').value;
+        const c = document.getElementById('student-class').value;
+        if(!n || !c) return alert("Nhập đủ thông tin nha!");
+        studentData.name = n; studentData.className = c;
+        studentData.startTime = new Date().toLocaleString('vi-VN');
+        startTimeObj = new Date();
+        document.getElementById('info-modal').style.display = 'none';
+        document.getElementById('main-container').style.display = 'block';
+        document.getElementById('display-info').innerText = `${n} - Lớp ${c}`;
+        document.getElementById('music-player').style.display = 'block';
+        document.getElementById('yt-iframe').src = "https://www.youtube.com/embed/Sshf4f66t00?autoplay=1";
+        startTimer(); loadQuestion();
+    }
+    function startTimer() { timerInterval = setInterval(() => { const diff = Math.floor((new Date() - startTimeObj) / 1000); const m = Math.floor(diff / 60).toString().padStart(2, '0'); const s = (diff % 60).toString().padStart(2, '0'); document.getElementById('timer-box').innerText = `Time: ${m}:${s}`; }, 1000); }
+    function loadQuestion() {
+        document.getElementById('user-answer').value = ""; document.getElementById('user-answer').disabled = false;
+        document.getElementById('hint-box').style.display = 'none'; document.getElementById('feedback-box').style.display = 'none';
+        document.getElementById('next-btn').style.display = 'none'; document.getElementById('check-btn').style.display = 'block';
+        document.getElementById('hint-btn').style.display = 'block';
+        document.getElementById('progress-text').innerText = `Câu ${currentIdx + 1} / ${questions.length}`;
+        document.getElementById('question-box').innerText = questions[currentIdx].q;
+        document.getElementById('prefix-text').innerText = questions[currentIdx].prefix;
+    }
+    function showHint() { document.getElementById('hint-box').style.display = 'block'; document.getElementById('hint-box').innerText = "💡 " + questions[currentIdx].ex; }
+    function check() {
+        const userVal = document.getElementById('user-answer').value.trim().toLowerCase().replace(/[.!]/g,'');
+        const valid = questions[currentIdx].ans.some(a => a.toLowerCase().replace(/[.!]/g,'') === userVal);
+        document.getElementById('user-answer').disabled = true;
+        const fb = document.getElementById('feedback-box'); fb.style.display = 'block';
+        if(valid) { fb.innerHTML = "✅ CHÍNH XÁC!"; fb.style.background = "#d0f4de"; }
+        else { fb.innerHTML = `❌ SAI RỒI!<br>Đáp án đúng: <b>${questions[currentIdx].full}</b><br>Giải thích: ${questions[currentIdx].ex}`; fb.style.background = "#ffafcc"; }
+        document.getElementById('check-btn').style.display = 'none'; document.getElementById('hint-btn').style.display = 'none';
+        document.getElementById('next-btn').style.display = 'block';
+    }
+    function loadNext() { currentIdx++; if(currentIdx < questions.length) loadQuestion(); else finish(); }
+    function finish() {
+        clearInterval(timerInterval); studentData.endTime = new Date().toLocaleString('vi-VN');
+        document.getElementById('quiz-area').style.display = 'none'; document.getElementById('finish-area').style.display = 'block';
+        document.getElementById('total-time-display').innerText = `Thời gian: ${document.getElementById('timer-box').innerText}`;
+        document.getElementById('music-player').style.display = 'none';
+        if(scriptURL !== 'DÁN_LINK_WEB_APP_SHEET_CỦA_BÀ_VÀO_ĐÂY') fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(studentData) });
+    }
+</script>
+</body>
+</html>
